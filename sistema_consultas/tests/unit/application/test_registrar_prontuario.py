@@ -15,7 +15,7 @@ from consultas.domain.entities.medicamento import Medicamento
 from consultas.domain.entities.paciente import Paciente
 from consultas.domain.enums.sexo import Sexo
 from consultas.domain.enums.tipo_atendimento import TipoAtendimento
-from consultas.domain.exceptions import ProntuarioJaExisteError
+from consultas.domain.exceptions import ConsultaNaoAgendadaError
 from consultas.domain.value_objects.identificadores import (
     ConsultaId, EnderecoId, ExameId, MedicamentoId, MedicoId, PacienteId,
 )
@@ -62,5 +62,5 @@ def test_registrar_prontuario_duplicado() -> None:
         observacao_clinica="OK", exame_ids=[], prescricoes=[],
     )
     uc.executar(entrada)
-    with pytest.raises(ProntuarioJaExisteError):
+    with pytest.raises(ConsultaNaoAgendadaError):
         uc.executar(entrada)

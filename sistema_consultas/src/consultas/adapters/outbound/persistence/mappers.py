@@ -42,9 +42,15 @@ def consulta_to_domain(m: ConsultaModel) -> Consulta:
     )
 
 def consulta_to_model(c: Consulta) -> ConsultaModel:
+    cid = int(c.id)
     return ConsultaModel(
-        id=int(c.id), paciente_id=int(c.paciente_id), medico_id=int(c.medico_id), data_hora=c.data_hora,
-        novo_paciente=c.novo_paciente, tipo_atendimento=c.tipo_atendimento.value, estado=c.estado.value,
+        id=cid if cid else None,
+        paciente_id=int(c.paciente_id),
+        medico_id=int(c.medico_id),
+        data_hora=c.data_hora,
+        novo_paciente=c.novo_paciente,
+        tipo_atendimento=c.tipo_atendimento.value,
+        estado=c.estado.value,
     )
 
 def prontuario_to_domain(m: ProntuarioModel) -> Prontuario:

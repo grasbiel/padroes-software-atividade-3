@@ -156,7 +156,7 @@ src/consultas/
 │   ├── strategies/          # Tipo de atendimento (Strategy Pattern)
 │   └── events.py            # Eventos de domínio
 ├── application/             # Casos de uso e portas
-│   ├── ports/in/            # (use cases como serviços)
+│   ├── ports/input/         # Protocols dos casos de uso (portas de entrada)
 │   ├── ports/out/           # Repositories + Gateways (Protocol)
 │   ├── use_cases/           # 5 casos de uso
 │   └── dtos/                # Objetos de transferência

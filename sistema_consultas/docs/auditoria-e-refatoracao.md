@@ -19,16 +19,28 @@ Documento gerado para guiar a melhoria do **Sistema de Consultas Médicas** ante
 | Fluxo E2E completo na API | **Com falhas** |
 | Git | Código ainda não commitado |
 
-A **Etapa 01** está aproximadamente **90% completa**. A **Etapa 02** está **parcialmente implementada** — existe código e documentação, mas a integração no fluxo real da API tem lacunas.
+A **Etapa 01** está **completa**. A **Etapa 02** está **implementada** (notificações + CRM integrados ao fluxo).
+
+**Última revisão:** 24/06/2026 — correções P0/P1/P2 aplicadas.
 
 ---
 
-## Bugs encontrados
+## Histórico — bugs corrigidos
+
+| Bug | Status |
+|-----|--------|
+| Bug 1 — `prontuario_id` retorna `0` / receituário vazio | **Corrigido** |
+| Bug 2 — Notificações não disparam na API | **Corrigido** |
+| Bug 3 — CRM não integrado ao agendamento | **Corrigido** |
+
+---
+
+## Bugs encontrados (referência)
 
 ### Bug 1 — `prontuario_id` retorna `0` e receituário vazio
 
 **Severidade:** Crítica  
-**Status:** Aberto
+**Status:** Corrigido
 
 #### Sintoma
 
@@ -82,9 +94,9 @@ return int(prontuario_salvo.id)
 ### Bug 2 — Notificações não disparam na API
 
 **Severidade:** Alta  
-**Status:** Aberto
+**Status:** Corrigido
 
-#### Sintoma
+#### Sintoma (resolvido)
 
 A Etapa 02 documenta notificações como implementadas (`ConsoleNotificador` + Observer), mas ao agendar ou registrar prontuário via HTTP **nenhuma mensagem aparece no console**.
 
@@ -128,9 +140,9 @@ Atualizar o router para usar `Depends(get_event_publisher)` em vez de `request_e
 ### Bug 3 — Integração CRM existe mas não é utilizada
 
 **Severidade:** Alta  
-**Status:** Aberto
+**Status:** Corrigido
 
-#### Sintoma
+#### Sintoma (resolvido)
 
 `HttpMedicoRegistroProfissionalGateway` está implementado em `adapters/outbound/crm/`, e `docs/evolucao-sistema.md` marca a feature **III** como implementada, mas **nenhum caso de uso chama o gateway**.
 

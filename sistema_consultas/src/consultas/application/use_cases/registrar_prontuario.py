@@ -10,8 +10,13 @@ from consultas.application.ports.out.repositories import (
 from consultas.domain.builders.prontuario_builder import ProntuarioBuilder
 from consultas.domain.entities.prescricao import Prescricao
 from consultas.domain.events import ProntuarioRegistradoEvent
+from consultas.domain.enums.estado_consulta import EstadoConsulta
 from consultas.domain.exceptions import (
-    EntityNotFoundError, ExameNaoCadastradoError, MedicamentoNaoCadastradoError, ProntuarioJaExisteError,
+    ConsultaNaoAgendadaError,
+    EntityNotFoundError,
+    ExameNaoCadastradoError,
+    MedicamentoNaoCadastradoError,
+    ProntuarioJaExisteError,
 )
 from consultas.domain.value_objects.identificadores import ConsultaId, ExameId, MedicamentoId, PrescricaoId
 
@@ -34,6 +39,8 @@ class RegistrarProntuarioUseCase:
         consulta = self._consultas.obter_por_id(consulta_id)
         if consulta is None:
             raise EntityNotFoundError("Consulta não encontrada.")
+        if consulta.estado is not EstadoConsulta.AGENDADA:
+            raise ConsultaNaoAgendadaError("Somente consultas agendadas podem receber prontuário.")
         if self._prontuarios.obter_por_consulta(consulta_id) is not None:
             raise ProntuarioJaExisteError("Cada consulta possui exatamente um prontuário.")
         paciente = self._pacientes.obter_por_id(consulta.paciente_id)
@@ -51,21 +58,28 @@ class RegistrarProntuarioUseCase:
         for eid in entrada.exame_ids:
             builder = builder.adicionar_exame(ExameId(eid))
         prontuario = builder.build()
-        self._prontuarios.salvar(prontuario)
+        prontuario_salvo = self._prontuarios.salvar(prontuario)
         prox = int(self._prescricoes.proximo_id())
         prescricoes = [
             Prescricao(
-                id=PrescricaoId(prox + idx), prontuario_id=prontuario.id,
-                medicamento_id=MedicamentoId(p.medicamento_id), dosagem=p.dosagem,
-                administracao=p.administracao, tempo_de_uso=p.tempo_de_uso,
+                id=PrescricaoId(prox + idx),
+                prontuario_id=prontuario_salvo.id,
+                medicamento_id=MedicamentoId(p.medicamento_id),
+                dosagem=p.dosagem,
+                administracao=p.administracao,
+                tempo_de_uso=p.tempo_de_uso,
             )
             for idx, p in enumerate(entrada.prescricoes)
         ]
         if prescricoes:
             self._prescricoes.salvar_varias(prescricoes)
         self._consultas.salvar(consulta.marcar_realizada())
-        self._eventos.publicar(ProntuarioRegistradoEvent(
-            ocorrido_em=datetime.now(timezone.utc), prontuario_id=prontuario.id,
-            consulta_id=consulta_id, paciente_id=paciente.id,
-        ))
-        return int(prontuario.id)
+        self._eventos.publicar(
+            ProntuarioRegistradoEvent(
+                ocorrido_em=datetime.now(timezone.utc),
+                prontuario_id=prontuario_salvo.id,
+                consulta_id=consulta_id,
+                paciente_id=paciente.id,
+            )
+        )
+        return int(prontuario_salvo.id)

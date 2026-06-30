@@ -6,7 +6,12 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from consultas.adapters.inbound.rest.dependencies import build_repositories, get_db, request_events_publisher
+from consultas.adapters.inbound.rest.dependencies import (
+    build_repositories,
+    get_crm_gateway,
+    get_db,
+    get_event_publisher,
+)
 from consultas.adapters.inbound.rest.schemas import (
     AgendarConsultaRequest,
     ConsultaDiaResponse,
@@ -21,6 +26,8 @@ from consultas.application.dtos.consulta_dtos import (
     PrescricaoInputDTO,
     RegistrarProntuarioInputDTO,
 )
+from consultas.adapters.outbound.notifications.event_bus import InProcessEventPublisher
+from consultas.application.ports.out.gateways import MedicoRegistroProfissionalGateway
 from consultas.application.use_cases.agendar_consulta import AgendarConsultaUseCase
 from consultas.application.use_cases.consultar_historico_prontuario import ConsultarHistoricoProntuarioUseCase
 from consultas.application.use_cases.gerar_receituario import GerarReceituarioUseCase
@@ -80,7 +87,10 @@ def contexto_prontuario(consulta_id: int, session: Session = Depends(get_db)) ->
 
 @router.post("/{consulta_id}/prontuario")
 def registrar_prontuario(
-    consulta_id: int, body: RegistrarProntuarioRequest, session: Session = Depends(get_db)
+    consulta_id: int,
+    body: RegistrarProntuarioRequest,
+    session: Session = Depends(get_db),
+    eventos: InProcessEventPublisher = Depends(get_event_publisher),
 ) -> dict[str, int]:
     repos = build_repositories(session)
     use_case = RegistrarProntuarioUseCase(
@@ -90,7 +100,7 @@ def registrar_prontuario(
         repos.medicamentos,
         repos.exames,
         repos.prescricoes,
-        request_events_publisher(),
+        eventos,
     )
     entrada = RegistrarProntuarioInputDTO(
         consulta_id=consulta_id,
@@ -139,10 +149,20 @@ def gerar_receituario(consulta_id: int, session: Session = Depends(get_db)) -> R
 
 
 @router.post("")
-def agendar_consulta(body: AgendarConsultaRequest, session: Session = Depends(get_db)) -> dict[str, int]:
+def agendar_consulta(
+    body: AgendarConsultaRequest,
+    session: Session = Depends(get_db),
+    eventos: InProcessEventPublisher = Depends(get_event_publisher),
+    crm_gateway: MedicoRegistroProfissionalGateway = Depends(get_crm_gateway),
+) -> dict[str, int]:
     repos = build_repositories(session)
     use_case = AgendarConsultaUseCase(
-        repos.consultas, repos.pacientes, repos.telefones, request_events_publisher()
+        repos.consultas,
+        repos.pacientes,
+        repos.medicos,
+        repos.telefones,
+        crm_gateway,
+        eventos,
     )
     entrada = AgendarConsultaInputDTO(
         paciente_id=body.paciente_id,

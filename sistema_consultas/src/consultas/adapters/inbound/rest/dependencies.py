@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from dataclasses import dataclass
+from typing import cast
 
 from fastapi import Request
 from sqlalchemy.orm import Session
 
 from consultas.adapters.outbound.notifications.event_bus import InProcessEventPublisher
+from consultas.application.ports.out.gateways import MedicoRegistroProfissionalGateway
 from consultas.adapters.outbound.persistence.sqlalchemy_repositories import (
     SqlAlchemyConsultaRepository,
     SqlAlchemyExameRepository,
@@ -67,5 +69,9 @@ def build_repositories(session: Session) -> RepositoriesBundle:
     )
 
 
-def request_events_publisher() -> InProcessEventPublisher:
-    return InProcessEventPublisher()
+def get_event_publisher(request: Request) -> InProcessEventPublisher:
+    return cast(InProcessEventPublisher, request.app.state.event_publisher)
+
+
+def get_crm_gateway(request: Request) -> MedicoRegistroProfissionalGateway:
+    return cast(MedicoRegistroProfissionalGateway, request.app.state.crm_gateway)

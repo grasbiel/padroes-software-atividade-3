@@ -30,10 +30,19 @@ class SqlAlchemyConsultaRepository:
         model = mappers.consulta_to_model(consulta)
         if existing:
             existing.estado = model.estado
+            self._session.flush()
+            return mappers.consulta_to_domain(existing)
+        if int(consulta.id) == 0:
+            model.id = None  # type: ignore[assignment]
         else:
             self._session.merge(model)
+            self._session.flush()
+            merged = self._session.get(ConsultaModel, int(consulta.id))
+            assert merged is not None
+            return mappers.consulta_to_domain(merged)
+        self._session.add(model)
         self._session.flush()
-        return consulta
+        return mappers.consulta_to_domain(model)
 
     def obter_por_id(self, consulta_id: ConsultaId) -> Consulta | None:
         row = self._session.get(ConsultaModel, int(consulta_id))
@@ -53,16 +62,25 @@ class SqlAlchemyPacienteRepository:
 
     def salvar(self, paciente: Paciente) -> Paciente:
         model = PacienteModel(
-            id=int(paciente.id) or None, nome_crianca=paciente.nome_crianca,
-            nome_responsavel=paciente.nome_responsavel, data_nascimento=paciente.data_nascimento,
-            sexo=paciente.sexo.value, endereco_id=int(paciente.endereco_id),
+            id=int(paciente.id) or None,
+            nome_crianca=paciente.nome_crianca,
+            nome_responsavel=paciente.nome_responsavel,
+            data_nascimento=paciente.data_nascimento,
+            sexo=paciente.sexo.value,
+            endereco_id=int(paciente.endereco_id),
             plano_saude_id=int(paciente.plano_saude_id) if paciente.plano_saude_id else None,
         )
         self._session.add(model)
         self._session.flush()
-        return Paciente(id=PacienteId(model.id), **{k: getattr(paciente, k) for k in (
-            'nome_crianca','nome_responsavel','data_nascimento','sexo','endereco_id','plano_saude_id'
-        )})
+        return Paciente(
+            id=PacienteId(model.id),
+            nome_crianca=paciente.nome_crianca,
+            nome_responsavel=paciente.nome_responsavel,
+            data_nascimento=paciente.data_nascimento,
+            sexo=paciente.sexo,
+            endereco_id=paciente.endereco_id,
+            plano_saude_id=paciente.plano_saude_id,
+        )
 
     def obter_por_id(self, paciente_id: PacienteId) -> Paciente | None:
         row = self._session.get(PacienteModel, int(paciente_id))

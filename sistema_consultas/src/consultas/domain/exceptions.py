@@ -21,3 +21,9 @@ class MedicamentoNaoCadastradoError(BusinessRuleViolation):
 
 class ExameNaoCadastradoError(BusinessRuleViolation):
     pass
+
+class ConsultaNaoAgendadaError(BusinessRuleViolation):
+    pass
+
+class CrmInvalidoError(BusinessRuleViolation):
+    pass
